@@ -8,6 +8,9 @@ except ImportError:
     import tkinter as tk
 
 from tkinter import messagebox  # 상단에 추가
+from threading import Thread  # 상단 임포트 구문에 추가
+
+import winsound  # Windows 시스템에서 소리 재생을 위한 모듈
 
 # GUI 폰트 설정
 FONT_NAME = 'Roboto'
@@ -256,11 +259,25 @@ class Counter(object):
         else:
             self.switch_to_work()
         
-        messagebox.showinfo("알림", "타이머가 완료되었습니다!")
+        # 알람 소리 재생
+        try:
+            Thread(target=lambda: winsound.PlaySound('alarm.wav', winsound.SND_FILENAME), daemon=True).start()
+        except:
+            pass
+            
+        # 현재 모드에 따른 메시지 설정
+        if self.current_mode == 'work':
+            message = "작업 시작!"
+        elif self.current_mode == 'short_break':
+            message = "짧고 달콤한 휴식 시간~"
+        else:
+            message = "수고하셨어요! 충분한 휴식을 취하세요!"
+            
+        messagebox.showinfo("알림", message)
         
         # 다음 모드에서 타이머 자동 시작
         self.paused = False
-        self.text_colour.value = TIMER_ACTIVE_COLOUR  # 활성화된 색상으로 설정
+        self.text_colour.value = TIMER_ACTIVE_COLOUR
         self.refresh()
 
     def format_time(self):
@@ -307,9 +324,9 @@ class Counter(object):
         self.refresh()
 
 # 상단에 Pomodoro 관련 상수 추가
-POMODORO_WORK = 25 * 60      # 작업 시간 (25분)
-POMODORO_SHORT_BREAK = 5 * 60  # 짧은 휴식 (5분)
-POMODORO_LONG_BREAK = 15 * 60  # 긴 휴식 (15분)
+POMODORO_WORK = 5      # 작업 시간 (25분)
+POMODORO_SHORT_BREAK = 5  # 짧은 휴식 (5분)
+POMODORO_LONG_BREAK = 15  # 긴 휴식 (15분)
 POMODORO_CYCLES = 4           # 긴 휴식까지의 사이클 수
 
 # 메인 함수
