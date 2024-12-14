@@ -82,18 +82,39 @@ class Timer(tk.Tk):
         tk.Tk.__init__(self)
         self.wm_title('뽀모도로 타이머')
         
-        # 단일 타이머만 사용
+        # 메인 프레임
         self.frame = tk.Frame(self)
-        self.frame.grid(row=0, column=0, sticky='WE')
+        self.frame.grid(row=0, column=0, sticky='NSEW', padx=10, pady=5)
         
         # 컨트롤 버튼 프레임
         self.button_frame = tk.Frame(self)
-        self.button_frame.grid(column=0, row=1, sticky='WE')
+        self.button_frame.grid(row=2, column=0, sticky='EW', padx=10, pady=5)
         
-        # 시작/일시정지 버튼만 유지
-        self.button_start = tk.Label(self.button_frame, text='시작', font=(FONT_NAME, ADD_SIZE))
-        self.button_start.grid(column=0, row=0, sticky='WE')
-        self.button_start.bind("<Button-1>", self.toggle_timer)
+        # 버튼 프레임을 3개의 열로 균등하게 분할
+        for i in range(3):
+            self.button_frame.grid_columnconfigure(i, weight=1)
+        
+        # 첫 번째 줄 버튼들
+        self.button_start = tk.Button(self.button_frame, text='시작/일시정지', 
+                                    font=(FONT_NAME, LABEL_SIZE), command=self.toggle_timer)
+        self.button_start.grid(row=0, column=0, columnspan=2, sticky='EW', padx=2, pady=2)
+        
+        self.button_reset = tk.Button(self.button_frame, text='초기화', 
+                                    font=(FONT_NAME, LABEL_SIZE), command=self.reset_timer)
+        self.button_reset.grid(row=0, column=2, sticky='EW', padx=2, pady=2)
+        
+        # 두 번째 줄 버튼들
+        self.button_work = tk.Button(self.button_frame, text='작업 시간', 
+                                   font=(FONT_NAME, LABEL_SIZE), command=self.switch_to_work)
+        self.button_work.grid(row=1, column=0, sticky='EW', padx=2, pady=2)
+        
+        self.button_short = tk.Button(self.button_frame, text='짧은 휴식', 
+                                    font=(FONT_NAME, LABEL_SIZE), command=self.switch_to_short)
+        self.button_short.grid(row=1, column=1, sticky='EW', padx=2, pady=2)
+        
+        self.button_long = tk.Button(self.button_frame, text='긴 휴식', 
+                                   font=(FONT_NAME, LABEL_SIZE), command=self.switch_to_long)
+        self.button_long.grid(row=1, column=2, sticky='EW', padx=2, pady=2)
         
         # 단일 카운터 생성
         self.counter = Counter(self.frame)
@@ -132,15 +153,38 @@ class Timer(tk.Tk):
         self.after(1000, self.ticker)
         self.counter.tick()
 
+    def switch_to_work(self):
+        """작업 시간으로 전환"""
+        self.counter.switch_to_work()
+        
+    def switch_to_short(self):
+        """짧은 휴식으로 전환"""
+        self.counter.switch_to_short()
+        
+    def switch_to_long(self):
+        """긴 휴식으로 전환"""
+        self.counter.switch_to_long()
+
+    def reset_timer(self):
+        """현재 모드의 타이머를 초기값으로 재설정"""
+        self.counter.reset_current_mode()
+
 # 개별 타이머 카운터 클래스
 class Counter(object):
     def __init__(self, master):
+        self.master = master
         self.frame = tk.Frame(master)
         self.time_frame = tk.Frame(self.frame)
         self.time_frame.grid(column=0, row=1)
         
-        # 기본값을 25분(뽀모도로 작업시간)으로 설정
-        self.time = POMODORO_WORK
+        # 각 모드별 시간 저장
+        self.work_time = POMODORO_WORK
+        self.short_break_time = POMODORO_SHORT_BREAK
+        self.long_break_time = POMODORO_LONG_BREAK
+        
+        # 현재 모드 (work, short_break, long_break)
+        self.current_mode = 'work'
+        self.time = self.work_time
         self.paused = True
         self.text_colour = Toggle(TIMER_INACTIVE_COLOUR, TIMER_ACTIVE_COLOUR)
         
@@ -156,12 +200,25 @@ class Counter(object):
         self.time_label = tk.Label(
             self.time_frame,
             text=self.format_time(),
-            font=(FONT_NAME, TIME_SIZE)
+            font=(FONT_NAME, TIME_SIZE),
+            fg=TIMER_INACTIVE_COLOUR  # 초기 색상을 회색으로 설정
         )
         self.time_label.grid(column=0, row=0)
         
         self.pomodoro_cycle = 0
         self.is_break = False
+
+    def reset_current_mode(self):
+        """현재 모드의 타이머를 초기값으로 재설정"""
+        if self.current_mode == 'work':
+            self.time = POMODORO_WORK
+        elif self.current_mode == 'short_break':
+            self.time = POMODORO_SHORT_BREAK
+        else:  # long_break
+            self.time = POMODORO_LONG_BREAK
+        self.paused = True
+        self.text_colour.reset()
+        self.refresh()
 
     def tick(self):
         """1초마다 호출되어 타이머를 갱신하는 메서드"""
@@ -176,19 +233,18 @@ class Counter(object):
         if not self.is_break:
             self.pomodoro_cycle += 1
             if self.pomodoro_cycle % POMODORO_CYCLES == 0:
-                self.time = POMODORO_LONG_BREAK
-                self.status_label.config(text="긴 휴식 시간")
+                self.switch_to_long()
             else:
-                self.time = POMODORO_SHORT_BREAK
-                self.status_label.config(text="짧은 휴식 시간")
-            self.is_break = True
+                self.switch_to_short()
         else:
-            self.time = POMODORO_WORK
-            self.status_label.config(text="작업 시간")
-            self.is_break = False
+            self.switch_to_work()
         
         messagebox.showinfo("알림", "타이머가 완료되었습니다!")
-        self.paused = True
+        
+        # 다음 모드에서 타이머 자동 시작
+        self.paused = False
+        self.text_colour.value = TIMER_ACTIVE_COLOUR  # 활성화된 색상으로 설정
+        self.refresh()
 
     def format_time(self):
         """시간을 MM:SS 형식으로 포맷팅"""
@@ -207,6 +263,30 @@ class Counter(object):
         """타이머 시작/정지 토글"""
         self.paused = not self.paused
         self.text_colour.flip()
+        self.refresh()
+
+    def switch_to_work(self):
+        """작업 시간으로 전환"""
+        self.time = POMODORO_WORK
+        self.current_mode = 'work'
+        self.status_label.config(text="작업 시간")
+        self.is_break = False
+        self.refresh()
+        
+    def switch_to_short(self):
+        """짧은 휴식으로 전환"""
+        self.time = POMODORO_SHORT_BREAK
+        self.current_mode = 'short_break'
+        self.status_label.config(text="짧은 휴식 시간")
+        self.is_break = True
+        self.refresh()
+        
+    def switch_to_long(self):
+        """긴 휴식으로 전환"""
+        self.time = POMODORO_LONG_BREAK
+        self.current_mode = 'long_break'
+        self.status_label.config(text="긴 휴식 시간")
+        self.is_break = True
         self.refresh()
 
 # 상단에 Pomodoro 관련 상수 추가
