@@ -82,13 +82,29 @@ class Timer(tk.Tk):
         tk.Tk.__init__(self)
         self.wm_title('뽀모도로 타이머')
         
+        # 아이콘 설정
+        try:
+            self.iconbitmap('tomato.ico')  # Windows
+        except:
+                pass  # 아이콘 파일이 없는 경우 기본 아이콘 사용
+        
+        # 전체 창 크기 조정 설정
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        
         # 메인 프레임
         self.frame = tk.Frame(self)
-        self.frame.grid(row=0, column=0, sticky='NSEW', padx=10, pady=5)
+        self.frame.grid(row=0, column=0, sticky='NSEW')
+        self.frame.grid_rowconfigure(0, weight=1)
+        self.frame.grid_columnconfigure(0, weight=1)
         
-        # 컨트롤 버튼 프레임
+        # Counter 객체 생성 및 배치
+        self.counter = Counter(self.frame)
+        self.counter.frame.grid(row=0, column=0, sticky='NSEW')
+        
+        # 버튼 프레임은 하단에 고정
         self.button_frame = tk.Frame(self)
-        self.button_frame.grid(row=2, column=0, sticky='EW', padx=10, pady=5)
+        self.button_frame.grid(row=1, column=0, sticky='EW', padx=10, pady=5)
         
         # 버튼 프레임을 3개의 열로 균등하게 분할
         for i in range(3):
@@ -116,10 +132,6 @@ class Timer(tk.Tk):
                                    font=(FONT_NAME, LABEL_SIZE), command=self.switch_to_long)
         self.button_long.grid(row=1, column=2, sticky='EW', padx=2, pady=2)
         
-        # 단일 카운터 생성
-        self.counter = Counter(self.frame)
-        self.counter.frame.grid(row=0, column=0)
-        
         # 화면 크기 및 위치 설정
         self.setup_window()
         
@@ -131,9 +143,9 @@ class Timer(tk.Tk):
         # 창 크기 고정
         self.resizable(False, False)
         
-        # 창을 화면 중앙에 위치
+        # 창 크기 설정
         window_width = 300
-        window_height = 200
+        window_height = 140
         
         # 화면 중앙 좌표 계산
         screen_width = self.winfo_screenwidth()
@@ -174,8 +186,11 @@ class Counter(object):
     def __init__(self, master):
         self.master = master
         self.frame = tk.Frame(master)
-        self.time_frame = tk.Frame(self.frame)
-        self.time_frame.grid(column=0, row=1)
+        
+        # 프레임 설정
+        self.frame.grid_rowconfigure(0, weight=1)
+        self.frame.grid_rowconfigure(1, weight=1)
+        self.frame.grid_columnconfigure(0, weight=1)
         
         # 각 모드별 시간 저장
         self.work_time = POMODORO_WORK
@@ -192,18 +207,20 @@ class Counter(object):
         self.status_label = tk.Label(
             self.frame,
             text="작업 시간",
-            font=(FONT_NAME, LABEL_SIZE)
+            font=(FONT_NAME, LABEL_SIZE),
+            anchor='center'
         )
-        self.status_label.grid(column=0, row=0)
+        self.status_label.grid(column=0, row=0, sticky='NSEW')
         
         # 시간 표시 레이블
         self.time_label = tk.Label(
-            self.time_frame,
+            self.frame,
             text=self.format_time(),
             font=(FONT_NAME, TIME_SIZE),
-            fg=TIMER_INACTIVE_COLOUR  # 초기 색상을 회색으로 설정
+            fg=TIMER_INACTIVE_COLOUR,
+            anchor='center'
         )
-        self.time_label.grid(column=0, row=0)
+        self.time_label.grid(column=0, row=1, sticky='NSEW')
         
         self.pomodoro_cycle = 0
         self.is_break = False
