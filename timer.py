@@ -324,9 +324,9 @@ class Counter(object):
         self.refresh()
 
 # 상단에 Pomodoro 관련 상수 추가
-POMODORO_WORK = 5      # 작업 시간 (25분)
-POMODORO_SHORT_BREAK = 5  # 짧은 휴식 (5분)
-POMODORO_LONG_BREAK = 15  # 긴 휴식 (15분)
+POMODORO_WORK = 25 * 60      # 작업 시간 (25분)
+POMODORO_SHORT_BREAK = 5 * 60  # 짧은 휴식 (5분)
+POMODORO_LONG_BREAK = 15 * 60  # 긴 휴식 (15분)
 POMODORO_CYCLES = 4           # 긴 휴식까지의 사이클 수
 
 # 메인 함수
